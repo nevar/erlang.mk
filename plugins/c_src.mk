@@ -115,17 +115,15 @@ $(C_SRC_OUTPUT_FILE): $(OBJECTS)
 %.o: %.cpp
 	$(COMPILE_CPP) $(OUTPUT_OPTION) $<
 
-clean:: clean-c_src
+$(SOURCES): $(C_SRC_ENV)
+	@touch $@
 
-clean-c_src:
-	$(gen_verbose) rm -f $(C_SRC_OUTPUT_FILE) $(OBJECTS)
+ERL_PATH = $(realpath $(shell which erl))
 
-endif
-
-ifneq ($(wildcard $(C_SRC_DIR)),)
 $(C_SRC_ENV):
 	$(verbose) $(ERL) -eval "file:write_file(\"$(call core_native_path,$(C_SRC_ENV))\", \
 		io_lib:format( \
+			\"ERL_PATH_ENV ?= $(ERL_PATH)~n\" \
 			\"ERTS_INCLUDE_DIR ?= ~s/erts-~s/include/~n\" \
 			\"ERL_INTERFACE_INCLUDE_DIR ?= ~s~n\" \
 			\"ERL_INTERFACE_LIB_DIR ?= ~s~n\", \
@@ -134,12 +132,21 @@ $(C_SRC_ENV):
 			code:lib_dir(erl_interface, lib)])), \
 		halt()."
 
+clean:: clean-c_src
+
+clean-c_src:
+	$(gen_verbose) rm -f $(C_SRC_OUTPUT_FILE) $(OBJECTS)
+
 distclean:: distclean-c_src-env
 
 distclean-c_src-env:
 	$(gen_verbose) rm -f $(C_SRC_ENV)
 
 -include $(C_SRC_ENV)
+
+ifneq ($(ERL_PATH_ENV),$(ERL_PATH))
+$(shell rm $(C_SRC_ENV))
+endif
 endif
 
 # Templates.
